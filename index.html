@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>War Clicker</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --button-color: #007bff;
+            --panel-color: #f0f0f0;
+        }
+
+        body.dark {
+            --bg-color: #1e1e1e;
+            --text-color: #ffffff;
+            --button-color: #1a73e8;
+            --panel-color: #2d2d2d;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+            transition: all 0.3s;
+            user-select: none;
+        }
+
+        #click-area {
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+            background-image: url('https://q-xx.bstatic.com/xdata/images/hotel/max500/215500382.jpg?k=bfab20a750261abbb7ea08a9886b1eb9e0a7795acd9a3aefca9830a56cccf26b&s=100x100');
+            background-size: cover;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid var(--button-color);
+        }
+
+        .stats {
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--panel-color);
+            padding: 10px;
+        }
+
+        .nav-button {
+            padding: 10px 15px;
+            background-color: var(--button-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .menu {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: var(--panel-color);
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 400px;
+            z-index: 100;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .upgrade {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: var(--bg-color);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="stats">
+        <div>Баланс: <span id="balance">0</span></div>
+        <div>Урон за клик: <span id="damage-per-click">1</span></div>
+        <div>Всего нанесено урона: <span id="total-damage">0</span></div>
+    </div>
+
+    <div id="click-area" onclick="clickDamage()"></div>
+
+    <div class="nav">
+        <button class="nav-button" onclick="openMenu('shop-menu')">Магазин</button>
+        <button class="nav-button" onclick="openMenu('leaderboard-menu')">Таблица лидеров</button>
+        <button class="nav-button" onclick="openMenu('boost-menu')">Усиления</button>
+    </div>
+
+    <!-- Магазин -->
+    <div id="shop-menu" class="menu">
+        <span class="close-button" onclick="closeMenu('shop-menu')">×</span>
+        <h2>Магазин</h2>
+        <div id="upgrades-container"></div>
+    </div>
+
+    <!-- Таблица лидеров -->
+    <div id="leaderboard-menu" class="menu">
+        <span class="close-button" onclick="closeMenu('leaderboard-menu')">×</span>
+        <h2>Таблица лидеров</h2>
+        <div id="leaderboard-container"></div>
+    </div>
+
+    <!-- Усиления -->
+    <div id="boost-menu" class="menu">
+        <span class="close-button" onclick="closeMenu('boost-menu')">×</span>
+        <h2>Усиления</h2>
+        <div id="boosts-container"></div>
+    </div>
+
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // Установка темы
+        if (tg.colorScheme === 'dark') {
+            document.body.classList.add('dark');
+        }
+
+        // Игровые переменные
+        let balance = 0;
+        let totalDamage = 0;
+        let damagePerClick = 1;
+        let upgrades = {
+            damage1: { bought: false, cost: 25, damage: 1 },
+            damage2: { bought: false, cost: 50, damage: 2 },
+            infantry: { bought: false, cost: 400, dps: 5 },
+            artillery: { bought: false, cost: 1000, dps: 10 }
+        };
+        let boosts = {
+            emperor: { lastUsed: 0, active: false }
+        };
+        let dps = 0;
+
+        // Загрузка данных
+        function loadGame() {
+            const savedData = localStorage.getItem('warClickerData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                balance = data.balance || 0;
+                totalDamage = data.totalDamage || 0;
+                damagePerClick = data.damagePerClick || 1;
+                upgrades = data.upgrades || upgrades;
+                boosts = data.boosts || boosts;
+                dps = data.dps || 0;
+            }
+            updateUI();
+            startDPS();
+        }
+
+        // Сохранение данных
+        function saveGame() {
+            const gameData = {
+                balance,
+                totalDamage,
+                damagePerClick,
+                upgrades,
+                boosts,
+                dps
+            };
+            localStorage.setItem('warClickerData', JSON.stringify(gameData));
+            tg.sendData(JSON.stringify(gameData));
+        }
+
+        // Клик по цели
+        function clickDamage() {
+            const damage = damagePerClick;
+            balance += damage;
+            totalDamage += damage;
+            updateUI();
+            saveGame();
+        }
+
+        // DPS система
+        function startDPS() {
+            calculateDPS();
+            setInterval(() => {
+                if (dps > 0) {
+                    balance += dps;
+                    totalDamage += dps;
+                    updateUI();
+                    saveGame();
+                }
+            }, 1000);
+        }
+
+        function calculateDPS() {
+            dps = 0;
+            if (upgrades.infantry.bought) dps += upgrades.infantry.dps;
+            if (upgrades.artillery.bought) dps += upgrades.artillery.dps;
+        }
+
+        // Покупка улучшений
+        function buyUpgrade(id) {
+            const upgrade = upgrades[id];
+            if (!upgrade.bought && balance >= upgrade.cost) {
+                balance -= upgrade.cost;
+                upgrade.bought = true;
+                
+                if (id.startsWith('damage')) {
+                    damagePerClick += upgrade.damage;
+                }
+                
+                calculateDPS();
+                updateUI();
+                renderShop();
+                saveGame();
+            }
+        }
+
+        // Активация усиления
+        function activateBoost(id) {
+            const boost = boosts[id];
+            const now = Date.now();
+            
+            if (now - boost.lastUsed >= 24 * 60 * 60 * 1000) {
+                boost.lastUsed = now;
+                boost.active = true;
+                
+                if (id === 'emperor') {
+                    damagePerClick += 2;
+                    updateUI();
+                    setTimeout(() => {
+                        damagePerClick -= 2;
+                        boost.active = false;
+                        updateUI();
+                        renderBoosts();
+                        saveGame();
+                    }, 60000);
+                }
+                
+                renderBoosts();
+                saveGame();
+            }
+        }
+
+        // Обновление интерфейса
+        function updateUI() {
+            document.getElementById('balance').textContent = balance;
+            document.getElementById('damage-per-click').textContent = damagePerClick;
+            document.getElementById('total-damage').textContent = totalDamage;
+        }
+
+        // Меню
+        function openMenu(menuId) {
+            document.getElementById(menuId).style.display = 'block';
+            if (menuId === 'shop-menu') renderShop();
+            if (menuId === 'leaderboard-menu') renderLeaderboard();
+            if (menuId === 'boost-menu') renderBoosts();
+        }
+
+        function closeMenu(menuId) {
+            document.getElementById(menuId).style.display = 'none';
+        }
+
+        // Рендер магазина
+        function renderShop() {
+            const container = document.getElementById('upgrades-container');
+            container.innerHTML = '';
+            
+            if (!upgrades.damage1.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('damage1')">
+                        <strong>Улучшение урона lvl 1</strong><br>
+                        +1 урон за клик<br>
+                        Цена: 25
+                    </div>
+                `;
+            } else if (!upgrades.damage2.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('damage2')">
+                        <strong>Улучшение урона lvl 2</strong><br>
+                        +2 урона за клик<br>
+                        Цена: 50
+                    </div>
+                `;
+            }
+            
+            if (!upgrades.infantry.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('infantry')">
+                        <strong>Поддержка пехоты</strong><br>
+                        +5 урона в секунду<br>
+                        Цена: 400
+                    </div>
+                `;
+            } else if (!upgrades.artillery.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('artillery')">
+                        <strong>Поддержка артиллерии</strong><br>
+                        +10 урона в секунду<br>
+                        Цена: 1000
+                    </div>
+                `;
+            }
+        }
+
+        // Рендер таблицы лидеров
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-container');
+            container.innerHTML = '<p>Загрузка данных...</p>';
+            
+            // В реальной реализации здесь будет запрос к серверу
+            // Для примера используем заглушку
+            setTimeout(() => {
+                container.innerHTML = `
+                    <ol>
+                        <li>Игрок 1 - 10,000 урона</li>
+                        <li>Игрок 2 - 8,500 урона</li>
+                        <li>Вы - ${totalDamage} урона</li>
+                        <li>Игрок 4 - 5,200 урона</li>
+                        <li>Игрок 5 - 4,800 урона</li>
+                    </ol>
+                `;
+            }, 500);
+        }
+
+        // Рендер усилений
+        function renderBoosts() {
+            const container = document.getElementById('boosts-container');
+            const boost = boosts.emperor;
+            const now = Date.now();
+            const cooldown = 24 * 60 * 60 * 1000;
+            const remaining = Math.max(0, cooldown - (now - boost.lastUsed));
+            const hours = Math.floor(remaining / (60 * 60 * 1000));
+            
+            container.innerHTML = `
+                <div class="upgrade" onclick="activateBoost('emperor')" 
+                     style="${boost.active || remaining > 0 ? 'opacity: 0.7;' : ''}">
+                    <strong>За императора!</strong><br>
+                    +2 урона за клик на 1 минуту<br>
+                    ${boost.active ? 'Активно' : 
+                      remaining > 0 ? `Доступно через: ${hours}ч` : 'Готово к использованию'}
+                </div>
+            `;
+        }
+
+        // Автосохранение каждые 5 минут
+        setInterval(saveGame, 5 * 60 * 1000);
+
+        // Инициализация игры
+        tg.ready();
+        loadGame();
+    </script>
+</body>
+</html>

@@ -13,7 +13,7 @@ const db = new sqlite3.Database('./war_clicker.db', (err) => {
     if (err) {
         console.error(err.message);
     }
-    console.log('Connected to the war_clicker database.');
+    console.log('Connected to the tea_clicker database.');
 });
 
 // Создаем таблицу, если ее нет

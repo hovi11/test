@@ -364,11 +364,79 @@
         }
 
         // Автосохранение каждые 5 минут
-        setInterval(saveGame, 5 * 60 * 1000);
+        const userId = tg.initDataUnsafe.user?.id || 'anonymous';
 
-        // Инициализация игры
-        tg.ready();
-        loadGame();
+async function saveGame() {
+    const gameData = {
+        balance,
+        totalDamage,
+        damagePerClick,
+        upgrades,
+        boosts,
+        dps
+    };
+    
+    // Сохраняем локально
+    localStorage.setItem('warClickerData', JSON.stringify(gameData));
+    
+    // Отправляем на сервер
+    try {
+        const response = await fetch('http://ваш-сервер:3000/api/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userId, gameData })
+        });
+        
+        if (!response.ok) {
+            console.error('Ошибка сохранения на сервер');
+        }
+    } catch (error) {
+        console.error('Ошибка сети:', error);
+    }
+    
+    // Для Telegram
+    tg.sendData(JSON.stringify(gameData));
+}
+
+async function loadGame() {
+    // Пробуем загрузить с сервера
+    try {
+        const response = await fetch(`http://ваш-сервер:3000/api/load/${userId}`);
+        const data = await response.json();
+        
+        if (data.exists) {
+            // Загружаем данные с сервера
+            balance = data.gameData.balance || 0;
+            totalDamage = data.gameData.totalDamage || 0;
+            damagePerClick = data.gameData.damagePerClick || 1;
+            upgrades = data.gameData.upgrades || upgrades;
+            boosts = data.gameData.boosts || boosts;
+            dps = data.gameData.dps || 0;
+            updateUI();
+            startDPS();
+            return;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки с сервера:', error);
+    }
+    
+    // Если на сервере нет данных, пробуем локальное сохранение
+    const savedData = localStorage.getItem('warClickerData');
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        balance = data.balance || 0;
+        totalDamage = data.totalDamage || 0;
+        damagePerClick = data.damagePerClick || 1;
+        upgrades = data.upgrades || upgrades;
+        boosts = data.boosts || boosts;
+        dps = data.dps || 0;
+    }
+    
+    updateUI();
+    startDPS();
+}
     </script>
 </body>
 </html>

@@ -114,21 +114,18 @@
         <button class="nav-button" onclick="openMenu('boost-menu')">Усиления</button>
     </div>
 
-    <!-- Магазин -->
     <div id="shop-menu" class="menu">
         <span class="close-button" onclick="closeMenu('shop-menu')">×</span>
         <h2>Магазин</h2>
         <div id="upgrades-container"></div>
     </div>
 
-    <!-- Таблица лидеров -->
     <div id="leaderboard-menu" class="menu">
         <span class="close-button" onclick="closeMenu('leaderboard-menu')">×</span>
         <h2>Таблица лидеров</h2>
-        <div id="leaderboard-container"></div>
+        <div id="leaderboard-container">В разработке</div>
     </div>
 
-    <!-- Усиления -->
     <div id="boost-menu" class="menu">
         <span class="close-button" onclick="closeMenu('boost-menu')">×</span>
         <h2>Усиления</h2>
@@ -136,31 +133,30 @@
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
         const tg = window.Telegram.WebApp;
         tg.expand();
         
-        // Установка темы
         if (tg.colorScheme === 'dark') {
             document.body.classList.add('dark');
         }
 
-        // Игровые переменные
         let balance = 0;
         let totalDamage = 0;
         let damagePerClick = 1;
         let upgrades = {
-            damage1: { bought: false, cost: 25, damage: 1 },
-            damage2: { bought: false, cost: 50, damage: 2 },
-            infantry: { bought: false, cost: 400, dps: 5 },
-            artillery: { bought: false, cost: 1000, dps: 10 }
+            damage1: { bought: false, cost: 50, damage: 1 },
+            damage2: { bought: false, cost: 150, damage: 3 },
+            damage3: { bought: false, cost: 500, damage: 10 },
+            infantry: { bought: false, cost: 1000, dps: 10 },
+            artillery: { bought: false, cost: 5000, dps: 50 },
+            tanks: { bought: false, cost: 20000, dps: 200 }
         };
         let boosts = {
-            emperor: { lastUsed: 0, active: false }
+            emperor: { lastUsed: 0, active: false, duration: 60000 }
         };
         let dps = 0;
+        let boostTimeout = null;
 
-        // Загрузка данных
         function loadGame() {
             const savedData = localStorage.getItem('warClickerData');
             if (savedData) {
@@ -171,12 +167,15 @@
                 upgrades = data.upgrades || upgrades;
                 boosts = data.boosts || boosts;
                 dps = data.dps || 0;
+                
+                if (boosts.emperor.active) {
+                    activateBoost('emperor', true);
+                }
             }
             updateUI();
             startDPS();
         }
 
-        // Сохранение данных
         function saveGame() {
             const gameData = {
                 balance,
@@ -187,10 +186,11 @@
                 dps
             };
             localStorage.setItem('warClickerData', JSON.stringify(gameData));
-            tg.sendData(JSON.stringify(gameData));
+            if (window.Telegram && window.Telegram.WebApp) {
+                tg.sendData(JSON.stringify(gameData));
+            }
         }
 
-        // Клик по цели
         function clickDamage() {
             const damage = damagePerClick;
             balance += damage;
@@ -199,7 +199,6 @@
             saveGame();
         }
 
-        // DPS система
         function startDPS() {
             calculateDPS();
             setInterval(() => {
@@ -216,9 +215,9 @@
             dps = 0;
             if (upgrades.infantry.bought) dps += upgrades.infantry.dps;
             if (upgrades.artillery.bought) dps += upgrades.artillery.dps;
+            if (upgrades.tanks.bought) dps += upgrades.tanks.dps;
         }
 
-        // Покупка улучшений
         function buyUpgrade(id) {
             const upgrade = upgrades[id];
             if (!upgrade.bought && balance >= upgrade.cost) {
@@ -236,25 +235,28 @@
             }
         }
 
-        // Активация усиления
-        function activateBoost(id) {
+        function activateBoost(id, fromLoad = false) {
             const boost = boosts[id];
             const now = Date.now();
             
-            if (now - boost.lastUsed >= 24 * 60 * 60 * 1000) {
+            if (fromLoad || now - boost.lastUsed >= 24 * 60 * 60 * 1000) {
                 boost.lastUsed = now;
                 boost.active = true;
                 
                 if (id === 'emperor') {
                     damagePerClick += 2;
                     updateUI();
-                    setTimeout(() => {
-                        damagePerClick -= 2;
-                        boost.active = false;
-                        updateUI();
-                        renderBoosts();
-                        saveGame();
-                    }, 60000);
+                    
+                    if (!fromLoad) {
+                        if (boostTimeout) clearTimeout(boostTimeout);
+                        boostTimeout = setTimeout(() => {
+                            damagePerClick -= 2;
+                            boost.active = false;
+                            updateUI();
+                            renderBoosts();
+                            saveGame();
+                        }, boost.duration);
+                    }
                 }
                 
                 renderBoosts();
@@ -262,18 +264,15 @@
             }
         }
 
-        // Обновление интерфейса
         function updateUI() {
             document.getElementById('balance').textContent = balance;
             document.getElementById('damage-per-click').textContent = damagePerClick;
             document.getElementById('total-damage').textContent = totalDamage;
         }
 
-        // Меню
         function openMenu(menuId) {
             document.getElementById(menuId).style.display = 'block';
             if (menuId === 'shop-menu') renderShop();
-            if (menuId === 'leaderboard-menu') renderLeaderboard();
             if (menuId === 'boost-menu') renderBoosts();
         }
 
@@ -281,69 +280,23 @@
             document.getElementById(menuId).style.display = 'none';
         }
 
-        // Рендер магазина
         function renderShop() {
             const container = document.getElementById('upgrades-container');
             container.innerHTML = '';
             
-            if (!upgrades.damage1.bought) {
-                container.innerHTML += `
-                    <div class="upgrade" onclick="buyUpgrade('damage1')">
-                        <strong>Улучшение урона lvl 1</strong><br>
-                        +1 урон за клик<br>
-                        Цена: 25
-                    </div>
-                `;
-            } else if (!upgrades.damage2.bought) {
-                container.innerHTML += `
-                    <div class="upgrade" onclick="buyUpgrade('damage2')">
-                        <strong>Улучшение урона lvl 2</strong><br>
-                        +2 урона за клик<br>
-                        Цена: 50
-                    </div>
-                `;
-            }
-            
-            if (!upgrades.infantry.bought) {
-                container.innerHTML += `
-                    <div class="upgrade" onclick="buyUpgrade('infantry')">
-                        <strong>Поддержка пехоты</strong><br>
-                        +5 урона в секунду<br>
-                        Цена: 400
-                    </div>
-                `;
-            } else if (!upgrades.artillery.bought) {
-                container.innerHTML += `
-                    <div class="upgrade" onclick="buyUpgrade('artillery')">
-                        <strong>Поддержка артиллерии</strong><br>
-                        +10 урона в секунду<br>
-                        Цена: 1000
-                    </div>
-                `;
+            for (const [id, upgrade] of Object.entries(upgrades)) {
+                if (!upgrade.bought) {
+                    container.innerHTML += `
+                        <div class="upgrade" onclick="buyUpgrade('${id}')">
+                            <strong>${id.startsWith('damage') ? 'Улучшение урона' : 'Поддержка'} ${id.replace(/\D/g,'') || id}</strong><br>
+                            ${id.startsWith('damage') ? `+${upgrade.damage} урона за клик` : `+${upgrade.dps} урона в секунду`}<br>
+                            Цена: ${upgrade.cost}
+                        </div>
+                    `;
+                }
             }
         }
 
-        // Рендер таблицы лидеров
-        function renderLeaderboard() {
-            const container = document.getElementById('leaderboard-container');
-            container.innerHTML = '<p>Загрузка данных...</p>';
-            
-            // В реальной реализации здесь будет запрос к серверу
-            // Для примера используем заглушку
-            setTimeout(() => {
-                container.innerHTML = `
-                    <ol>
-                        <li>Игрок 1 - 10,000 урона</li>
-                        <li>Игрок 2 - 8,500 урона</li>
-                        <li>Вы - ${totalDamage} урона</li>
-                        <li>Игрок 4 - 5,200 урона</li>
-                        <li>Игрок 5 - 4,800 урона</li>
-                    </ol>
-                `;
-            }, 500);
-        }
-
-        // Рендер усилений
         function renderBoosts() {
             const container = document.getElementById('boosts-container');
             const boost = boosts.emperor;
@@ -363,80 +316,9 @@
             `;
         }
 
-        // Автосохранение каждые 5 минут
-        const userId = tg.initDataUnsafe.user?.id || 'anonymous';
-
-async function saveGame() {
-    const gameData = {
-        balance,
-        totalDamage,
-        damagePerClick,
-        upgrades,
-        boosts,
-        dps
-    };
-    
-    // Сохраняем локально
-    localStorage.setItem('warClickerData', JSON.stringify(gameData));
-    
-    // Отправляем на сервер
-    try {
-        const response = await fetch('http://ваш-сервер:3000/api/save', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ userId, gameData })
-        });
-        
-        if (!response.ok) {
-            console.error('Ошибка сохранения на сервер');
-        }
-    } catch (error) {
-        console.error('Ошибка сети:', error);
-    }
-    
-    // Для Telegram
-    tg.sendData(JSON.stringify(gameData));
-}
-
-async function loadGame() {
-    // Пробуем загрузить с сервера
-    try {
-        const response = await fetch(`http://ваш-сервер:3000/api/load/${userId}`);
-        const data = await response.json();
-        
-        if (data.exists) {
-            // Загружаем данные с сервера
-            balance = data.gameData.balance || 0;
-            totalDamage = data.gameData.totalDamage || 0;
-            damagePerClick = data.gameData.damagePerClick || 1;
-            upgrades = data.gameData.upgrades || upgrades;
-            boosts = data.gameData.boosts || boosts;
-            dps = data.gameData.dps || 0;
-            updateUI();
-            startDPS();
-            return;
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки с сервера:', error);
-    }
-    
-    // Если на сервере нет данных, пробуем локальное сохранение
-    const savedData = localStorage.getItem('warClickerData');
-    if (savedData) {
-        const data = JSON.parse(savedData);
-        balance = data.balance || 0;
-        totalDamage = data.totalDamage || 0;
-        damagePerClick = data.damagePerClick || 1;
-        upgrades = data.upgrades || upgrades;
-        boosts = data.boosts || boosts;
-        dps = data.dps || 0;
-    }
-    
-    updateUI();
-    startDPS();
-}
+        setInterval(saveGame, 300000);
+        tg.ready();
+        loadGame();
     </script>
 </body>
 </html>

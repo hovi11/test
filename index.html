@@ -3,37 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tes Clicker</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Tea Clicker Beta</title>
     <style>
-        /* Ваши стили остаются без изменений */
-        :root {
-            --bg-color: #ffffff;
-            --text-color: #000000;
-            --button-color: #007bff;
-            --panel-color: #f0f0f0;
-            --combo-color: #ff5722;
-        }
-
-        body.dark {
-            --bg-color: #1e1e1e;
-            --text-color: #ffffff;
-            --button-color: #1a73e8;
-            --panel-color: #2d2d2d;
-            --combo-color: #ff7043;
-        }
-
         body {
             font-family: Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
             text-align: center;
             margin: 0;
             padding: 10px;
-            transition: all 0.3s;
             user-select: none;
+            background-color: #1e1e1e;
+            color: white;
         }
-
         #click-area {
             width: 150px;
             height: 150px;
@@ -42,15 +22,13 @@
             background-size: cover;
             border-radius: 50%;
             cursor: pointer;
-            border: 3px solid var(--button-color);
+            border: 3px solid #1a73e8;
             position: relative;
         }
-
         .stats {
             margin: 10px 0;
             font-size: 18px;
         }
-
         .nav {
             display: flex;
             justify-content: space-around;
@@ -58,26 +36,24 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: var(--panel-color);
+            background-color: #2d2d2d;
             padding: 10px;
         }
-
         .nav-button {
             padding: 10px 15px;
-            background-color: var(--button-color);
+            background-color: #1a73e8;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-
         .menu {
             display: none;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: var(--panel-color);
+            background-color: #2d2d2d;
             padding: 20px;
             border-radius: 10px;
             width: 80%;
@@ -87,21 +63,18 @@
             max-height: 80vh;
             overflow-y: auto;
         }
-
         .upgrade {
             margin: 10px 0;
             padding: 10px;
-            background-color: var(--bg-color);
+            background-color: #1e1e1e;
             border-radius: 5px;
             cursor: pointer;
-            border: 1px solid #ddd;
+            border: 1px solid #444;
         }
-
         .upgrade.unavailable {
             opacity: 0.5;
             cursor: not-allowed;
         }
-
         .close-button {
             position: absolute;
             top: 5px;
@@ -109,13 +82,12 @@
             cursor: pointer;
             font-size: 20px;
         }
-
         .combo-display {
             position: absolute;
             top: -30px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: var(--combo-color);
+            background-color: #ff7043;
             color: white;
             padding: 3px 10px;
             border-radius: 15px;
@@ -123,23 +95,36 @@
             opacity: 0;
             transition: opacity 0.3s;
         }
-
-        .combo-bar {
+        .combo-bar-container {
+            position: absolute;
+            bottom: -15px;
+            left: 0;
+            right: 0;
             height: 5px;
-            background: linear-gradient(to right, #4CAF50, #FFC107, #F44336);
-            margin-top: 5px;
+            background: #444;
             border-radius: 3px;
-            display: none;
         }
-
+        .combo-bar {
+            height: 100%;
+            background: linear-gradient(to right, #4CAF50, #FFC107, #F44336);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s;
+        }
         .critical-hit {
             animation: criticalAnimation 0.5s;
         }
-
         @keyframes criticalAnimation {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
             100% { transform: scale(1); }
+        }
+        .menu-section {
+            margin-bottom: 20px;
+        }
+        .menu-section h3 {
+            margin-top: 0;
+            color: #FFC107;
         }
     </style>
 </head>
@@ -151,55 +136,43 @@
         <div>Всего нанесено урона: <span id="total-damage">0</span></div>
     </div>
 
-    <div id="click-area" onclick="clickDamage()">
+    <div id="click-area">
         <div class="combo-display" id="combo-display">x1.0</div>
-        <div class="combo-bar" id="combo-bar"></div>
+        <div class="combo-bar-container">
+            <div class="combo-bar" id="combo-bar"></div>
+        </div>
     </div>
 
     <div class="nav">
-        <button class="nav-button" onclick="openMenu('shop-menu')">Магазин</button>
-        <button class="nav-button" onclick="openMenu('leaderboard-menu')">Таблица лидеров</button>
-        <button class="nav-button" onclick="openMenu('boost-menu')">Усиления</button>
-        <button class="nav-button" onclick="openMenu('achievements-menu')">Достижения</button>
+        <button class="nav-button" id="shop-button">Магазин</button>
+        <button class="nav-button" id="boosts-button">Усиления</button>
+        <button class="nav-button" id="achievements-button">Достижения</button>
     </div>
 
     <div id="shop-menu" class="menu">
-        <span class="close-button" onclick="closeMenu('shop-menu')">×</span>
+        <span class="close-button" id="close-shop">×</span>
         <h2>Магазин</h2>
         <div id="upgrades-container"></div>
     </div>
 
-    <div id="leaderboard-menu" class="menu">
-        <span class="close-button" onclick="closeMenu('leaderboard-menu')">×</span>
-        <h2>Таблица лидеров</h2>
-        <div id="leaderboard-container">В разработке</div>
-    </div>
-
     <div id="boost-menu" class="menu">
-        <span class="close-button" onclick="closeMenu('boost-menu')">×</span>
+        <span class="close-button" id="close-boosts">×</span>
         <h2>Усиления</h2>
         <div id="boosts-container"></div>
     </div>
 
     <div id="achievements-menu" class="menu">
-        <span class="close-button" onclick="closeMenu('achievements-menu')">×</span>
+        <span class="close-button" id="close-achievements">×</span>
         <h2>Достижения</h2>
         <div id="achievements-container"></div>
     </div>
 <script>
-    const tg = window.Telegram?.WebApp || {};
-    if (tg.expand) tg.expand();
-    
-    if (tg.colorScheme === 'dark') {
-        document.body.classList.add('dark');
-    }
-
-    let gameState = {
+    // Игровые данные
+    const game = {
         balance: 0,
         totalDamage: 0,
-        damagePerClick: 1,
         baseDamage: 1,
-        dps: 0,
+        damagePerClick: 1,
         level: 1,
         experience: 0,
         requiredExperience: 500,
@@ -214,49 +187,55 @@
         comboTimeout: null,
         comboTimeoutDuration: 2000,
         clickTimes: [],
+        lastClickTime: 0,
+        playTime: 0,
         upgrades: {
-            knife: { bought: false, cost: 50, damage: 1, type: 'melee' },
-            axe: { bought: false, cost: 150, damage: 3, type: 'melee', requires: 'knife' },
-            sword: { bought: false, cost: 300, damage: 5, type: 'melee', requires: 'axe' },
-            chainsaw: { bought: false, cost: 700, damage: 10, type: 'melee', requires: 'sword' },
-            lightsaber: { bought: false, cost: 1500, damage: 20, type: 'melee', requires: 'chainsaw' },
-            pistol: { bought: false, cost: 100, damage: 2, type: 'ranged' },
-            rifle: { bought: false, cost: 250, damage: 5, type: 'ranged', requires: 'pistol' },
-            sniper: { bought: false, cost: 600, damage: 12, type: 'ranged', requires: 'rifle', critChance: 5, critMultiplier: 3 },
-            grenadeLauncher: { bought: false, cost: 1200, damage: 25, type: 'ranged', requires: 'sniper', aoe: true },
-            plasmaGun: { bought: false, cost: 2500, damage: 50, type: 'ranged', requires: 'grenadeLauncher' },
-            infantry: { bought: false, cost: 400, dps: 5, type: 'support' },
-            artillery: { bought: false, cost: 1000, dps: 10, type: 'support', requires: 'infantry' }
+            // Ближний бой
+            knife: { id: 'knife', name: 'Нож', bought: false, cost: 50, damage: 1, type: 'melee', next: 'axe' },
+            axe: { id: 'axe', name: 'Топор', bought: false, cost: 150, damage: 3, type: 'melee', next: 'sword' },
+            sword: { id: 'sword', name: 'Меч', bought: false, cost: 300, damage: 5, type: 'melee', next: 'chainsaw' },
+            chainsaw: { id: 'chainsaw', name: 'Бензопила', bought: false, cost: 700, damage: 10, type: 'melee', next: 'lightsaber' },
+            lightsaber: { id: 'lightsaber', name: 'Лазерный меч', bought: false, cost: 1500, damage: 20, type: 'melee' },
+            
+            // Дальний бой
+            pistol: { id: 'pistol', name: 'Пистолет', bought: false, cost: 100, damage: 2, type: 'ranged', next: 'rifle' },
+            rifle: { id: 'rifle', name: 'Винтовка', bought: false, cost: 250, damage: 5, type: 'ranged', next: 'sniper' },
+            sniper: { id: 'sniper', name: 'Снайперка', bought: false, cost: 600, damage: 12, type: 'ranged', critChance: 5, critMultiplier: 3, next: 'grenadeLauncher' },
+            grenadeLauncher: { id: 'grenadeLauncher', name: 'Гранатомёт', bought: false, cost: 1200, damage: 25, type: 'ranged', next: 'plasmaGun' },
+            plasmaGun: { id: 'plasmaGun', name: 'Плазменная пушка', bought: false, cost: 2500, damage: 50, type: 'ranged' }
         },
         boosts: {
             emperor: { 
+                id: 'emperor',
                 name: "За императора!", 
                 description: "+2 урона за клик на 1 минуту", 
                 cost: 0, 
-                cooldown: 24 * 60 * 60 * 1000,
+                cooldown: 300000,
                 lastUsed: 0,
-                effect: () => { gameState.baseDamage += 2; },
-                revert: () => { gameState.baseDamage -= 2; },
+                effect: function() { game.baseDamage += 2; calculateDamage(); },
+                revert: function() { game.baseDamage -= 2; calculateDamage(); },
                 duration: 60000
             },
             mobilization: { 
+                id: 'mobilization',
                 name: "Тотальная мобилизация", 
-                description: "Удваивает DPS на 30 сек", 
+                description: "Удваивает урон за клик на 30 сек", 
                 cost: 0, 
-                cooldown: 60 * 60 * 1000,
+                cooldown: 180000,
                 lastUsed: 0,
-                effect: () => { gameState.dps *= 2; },
-                revert: () => { gameState.dps /= 2; },
+                effect: function() { game.damagePerClick *= 2; },
+                revert: function() { game.damagePerClick /= 2; },
                 duration: 30000
             },
             reconnaissance: {
+                id: 'reconnaissance',
                 name: "Разведка",
                 description: "+50% урона на 20 кликов",
                 cost: 0,
-                cooldown: 45 * 60 * 1000,
+                cooldown: 240000,
                 lastUsed: 0,
-                effect: () => { gameState.globalMultiplier *= 1.5; },
-                revert: () => { gameState.globalMultiplier /= 1.5; },
+                effect: function() { game.globalMultiplier *= 1.5; calculateDamage(); },
+                revert: function() { game.globalMultiplier /= 1.5; calculateDamage(); },
                 clicksLeft: 20
             }
         },
@@ -266,24 +245,98 @@
                 description: "30 кликов за 15 сек", 
                 achieved: false, 
                 reward: "Комбо не сбрасывается 5 сек",
-                condition: (stats) => stats.fastClicks >= 30,
-                effect: () => { gameState.comboTimeoutDuration = 5000; }
+                condition: function() { return game.stats.fastClicks >= 30; },
+                effect: function() { game.comboTimeoutDuration = 5000; }
+            },
+            berserk: { 
+                name: "Берсерк", 
+                description: "500 кликов/мин", 
+                achieved: false, 
+                reward: "+10 урона на 30 сек",
+                condition: function() { return game.stats.clicksPerMinute >= 500; }
             },
             veteran: { 
                 name: "Ветеран", 
                 description: "Достичь 15 уровня", 
                 achieved: false, 
                 reward: "+1 слот для бустов",
-                condition: (stats) => gameState.level >= 15,
-                effect: () => { gameState.maxActiveBoosts += 1; }
+                condition: function() { return game.level >= 15; },
+                effect: function() { game.maxActiveBoosts += 1; }
+            },
+            legend: { 
+                name: "Легенда", 
+                description: "Достичь 25 уровня", 
+                achieved: false, 
+                reward: "Перманентный x1.2 множитель",
+                condition: function() { return game.level >= 25; },
+                effect: function() { game.globalMultiplier *= 1.2; calculateDamage(); }
+            },
+            immortal: { 
+                name: "Бессмертный", 
+                description: "24h в игре", 
+                achieved: false, 
+                reward: "Авто урон +1/сек",
+                condition: function() { return game.playTime >= 86400000; },
+                effect: function() { game.autoClicker += 1; startAutoClicker(); }
+            },
+            investor: { 
+                name: "Инвестор", 
+                description: "Купить 10 улучшений", 
+                achieved: false, 
+                reward: "-5% стоимость всех улучшений",
+                condition: function() { return game.stats.upgradesBought >= 10; },
+                effect: function() { 
+                    for (const upgrade of Object.values(game.upgrades)) {
+                        upgrade.cost = Math.floor(upgrade.cost * 0.95);
+                    }
+                }
+            },
+            oligarch: { 
+                name: "Олигарх", 
+                description: "Накопить 50 000 на балансе", 
+                achieved: false, 
+                reward: "+5% к урону от пассивных источников урона",
+                condition: function() { return game.stats.maxBalance >= 50000; }
             },
             beginner: { 
                 name: "Новичок", 
                 description: "100 кликов", 
                 achieved: false, 
                 reward: "+1 базовый урон",
-                condition: (stats) => stats.totalClicks >= 100,
-                effect: () => { gameState.baseDamage += 1; }
+                condition: function() { return game.stats.totalClicks >= 100; },
+                effect: function() { game.baseDamage += 1; calculateDamage(); }
+            },
+            machineGun: { 
+                name: "Пулемёт", 
+                description: "5000 кликов", 
+                achieved: false, 
+                reward: "+5 урона",
+                condition: function() { return game.stats.totalClicks >= 5000; },
+                effect: function() { game.baseDamage += 5; calculateDamage(); }
+            },
+            sniperAch: { 
+                name: "Снайпер", 
+                description: "50 критических ударов", 
+                achieved: false, 
+                reward: "+5% шанс крита",
+                condition: function() { return game.stats.critHits >= 50; },
+                effect: function() { game.critChance += 5; }
+            },
+            fireStorm: { 
+                name: "Шквал огня", 
+                description: "20 раз достичь комбо x2", 
+                achieved: false, 
+                reward: "+0.5 к множителю комбо",
+                condition: function() { return game.stats.comboX2 >= 20; },
+                effect: function() { game.maxCombo += 0.5; }
+            },
+            totalWar: { 
+                name: "Тотальная война", 
+                description: "1 000 000 общего урона", 
+                achieved: false, 
+                reward: "+10% ко всему урону",
+                condition: function() { return game.totalDamage >= 1000000; },
+                effect: function() { game.globalMultiplier *= 1.1; calculateDamage(); }
             }
         },
         stats: {
@@ -296,151 +349,342 @@
             critHits: 0,
             comboX2: 0,
             lastClickTime: 0
+        },
+        levelRewards: {
+            5: { effect: function() { game.globalMultiplier *= 1.05; calculateDamage(); }, description: "+5% к урону" },
+            10: { effect: function() { game.baseDamage += 10; calculateDamage(); }, description: "+10 к базовому урону" },
+            15: { effect: function() { game.critMultiplier += 0.5; }, description: "+10% к критическому урону" },
+            20: { effect: function() { game.maxCombo *= 2; }, description: "Удвоение эффекта комбо" },
+            25: { effect: function() { game.autoClicker += 1; startAutoClicker(); }, description: "Автокликер (1 клик/сек)" }
+        },
+        priceMultipliers: {
+            5: 2,
+            10: 3,
+            15: 4
         }
     };
 
+    // ============== НАЧАЛО ИСПРАВЛЕННОЙ ЧАСТИ ==============
+
+    function updateClickStats(now) {
+        // Обновляем статистику кликов в минуту
+        if (game.stats.lastClickTime) {
+            const minuteFraction = (now - game.stats.lastClickTime) / 60000;
+            if (minuteFraction < 1) {
+                game.stats.clicksPerMinute = Math.floor(game.stats.totalClicks / (game.playTime / 60000));
+            }
+        }
+        
+        // Проверяем достижение "Берсерк" (500 кликов/мин)
+        if (game.stats.clicksPerMinute >= 500 && !game.achievements.berserk.achieved) {
+            game.achievements.berserk.achieved = true;
+            showNotification("Достижение 'Берсерк' получено! +10 урона на 30 сек");
+        }
+    }
+
+    function updateComboBar() {
+        const activeClicks = game.clickTimes.length;
+        const comboPercent = Math.min(100, (activeClicks / 15) * 100);
+        const comboBar = document.getElementById('combo-bar');
+        if (comboBar) comboBar.style.width = comboPercent + '%';
+    }
+
+    function calculateDamageForClick() {
+        let damage = game.damagePerClick * game.combo;
+        
+        // Проверка критического удара
+        if (Math.random() * 100 < game.critChance) {
+            damage *= game.critMultiplier;
+            game.stats.critHits++;
+            
+            // Анимация крита
+            const clickArea = document.getElementById('click-area');
+            if (clickArea) {
+                clickArea.classList.add('critical-hit');
+                setTimeout(() => {
+                    clickArea.classList.remove('critical-hit');
+                }, 500);
+            }
+            
+            // Проверка достижения "Снайпер"
+            if (game.stats.critHits >= 50 && !game.achievements.sniperAch.achieved) {
+                game.achievements.sniperAch.achieved = true;
+                game.critChance += 5;
+                showNotification("Достижение 'Снайпер' получено! +5% шанс крита");
+            }
+        }
+        
+        return Math.floor(damage);
+    }
+
+    function applyDamage(damage) {
+        if (isNaN(damage)) damage = 0;
+        
+        game.balance += damage;
+        game.totalDamage += damage;
+        game.experience += damage;
+        game.stats.maxBalance = Math.max(game.stats.maxBalance, game.balance);
+        
+        // Проверка достижения "Олигарх"
+        if (game.stats.maxBalance >= 50000 && !game.achievements.oligarch.achieved) {
+            game.achievements.oligarch.achieved = true;
+            showNotification("Достижение 'Олигарх' получено! +5% к пассивному урону");
+        }
+    }
+
+    function loadGame() {
+        const saved = localStorage.getItem('warClickerSave');
+        if (saved) {
+            try {
+                const data = JSON.parse(saved);
+                
+                // Восстанавливаем основные числовые данные
+                Object.assign(game, {
+                    balance: data.balance || 0,
+                    totalDamage: data.totalDamage || 0,
+                    baseDamage: data.baseDamage || 1,
+                    level: data.level || 1,
+                    experience: data.experience || 0,
+                    requiredExperience: data.requiredExperience || 500,
+                    combo: data.combo || 1,
+                    critChance: data.critChance || 0,
+                    critMultiplier: data.critMultiplier || 2,
+                    autoClicker: data.autoClicker || 0,
+                    globalMultiplier: data.globalMultiplier || 1,
+                    playTime: data.playTime || 0,
+                    stats: data.stats || {
+                        totalClicks: 0,
+                        critHits: 0,
+                        maxBalance: 0
+                    }
+                });
+
+                // Восстанавливаем улучшения
+                if (data.upgrades) {
+                    for (const [id, upgrade] of Object.entries(data.upgrades)) {
+                        if (game.upgrades[id]) {
+                            game.upgrades[id].bought = upgrade.bought;
+                        }
+                    }
+                }
+
+                // Восстанавливаем достижения
+                if (data.achievements) {
+                    for (const [id, achievement] of Object.entries(data.achievements)) {
+                        if (game.achievements[id]) {
+                            game.achievements[id].achieved = achievement.achieved || false;
+                        }
+                    }
+                }
+
+                // Восстанавливаем активные бусты
+                if (data.activeBoosts) {
+                    const now = Date.now();
+                    game.activeBoosts = data.activeBoosts.filter(boost => {
+                        if (boost.endTime > now) {
+                            const remainingTime = boost.endTime - now;
+                            const boostData = game.boosts[boost.id];
+                            
+                            if (boostData) {
+                                boostData.effect();
+                                setTimeout(() => {
+                                    boostData.revert();
+                                    game.activeBoosts = game.activeBoosts.filter(b => b.id !== boost.id);
+                                    renderBoosts();
+                                    saveGame();
+                                }, remainingTime);
+                                return true;
+                            }
+                        }
+                        return false;
+                    });
+                }
+
+            } catch (e) {
+                console.error("Ошибка загрузки сохранения:", e);
+            }
+        }
+
+        // Гарантированно привязываем обработчик кликов
+        const clickArea = document.getElementById('click-area');
+        if (clickArea) {
+            clickArea.removeEventListener('click', handleClick);
+            clickArea.addEventListener('click', handleClick);
+        }
+
+        // Пересчитываем урон
+        calculateDamage();
+        updateUI();
+    }
+
+    // ============== КОНЕЦ ИСПРАВЛЕННОЙ ЧАСТИ ==============
+
+    // Инициализация игры
     function initGame() {
         loadGame();
+        setupEventListeners();
         calculateDamage();
         startDPS();
         startAutoClicker();
         updateUI();
-        setupEventListeners();
+        startPlayTimeCounter();
     }
 
+    // Настройка обработчиков событий
     function setupEventListeners() {
-        document.getElementById('click-area').addEventListener('click', clickDamage);
-        
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const menuId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
-                openMenu(menuId);
-            });
+        document.getElementById('click-area').addEventListener('click', handleClick);
+        document.getElementById('shop-button').addEventListener('click', () => {
+            openMenu('shop');
+            renderShop();
         });
-        
-        document.querySelectorAll('.close-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const menuId = this.getAttribute('onclick').match(/'([^']+)'/)[1];
-                closeMenu(menuId);
-            });
+        document.getElementById('boosts-button').addEventListener('click', () => {
+            openMenu('boosts');
+            renderBoosts();
         });
+        document.getElementById('achievements-button').addEventListener('click', () => {
+            openMenu('achievements');
+            renderAchievements();
+        });
+        document.getElementById('close-shop').addEventListener('click', () => closeMenu('shop'));
+        document.getElementById('close-boosts').addEventListener('click', () => closeMenu('boosts'));
+        document.getElementById('close-achievements').addEventListener('click', () => closeMenu('achievements'));
     }
 
-    function clickDamage() {
-        const now = Date.now();
-        gameState.stats.totalClicks++;
-        gameState.stats.lastClickTime = now;
+    // Обработка клика
+    function handleClick(timestamp) {
+        const now = timestamp || Date.now();
+        game.stats.totalClicks++;
+        game.stats.lastClickTime = now;
         
-        gameState.clickTimes.push(now);
-        gameState.clickTimes = gameState.clickTimes.filter(time => now - time < 2000);
+        // Обновляем статистику кликов
+        updateClickStats(now);
         
-        if (gameState.clickTimes.length >= 10) {
-            gameState.combo = Math.min(gameState.maxCombo, gameState.combo + 0.5);
+        // Система комбо
+        game.clickTimes.push(now);
+        game.clickTimes = game.clickTimes.filter(time => now - time < 2000);
+        
+        // Обновляем комбо-бар
+        updateComboBar();
+        
+        // Повышаем комбо при достижении порогов
+        const activeClicks = game.clickTimes.length;
+        if (activeClicks >= 15 && activeClicks < 25 && game.combo < 1.5) {
+            game.combo = 1.5;
             showCombo();
-            if (gameState.combo >= 2) gameState.stats.comboX2++;
+        } 
+        else if (activeClicks >= 25 && activeClicks < 35 && game.combo < 2) {
+            game.combo = 2;
+            game.stats.comboX2++;
+            showCombo();
+        } 
+        else if (activeClicks >= 35 && game.combo < 3) {
+            game.combo = 3;
+            showCombo();
         }
         
-        if (gameState.comboTimeout) clearTimeout(gameState.comboTimeout);
-        gameState.comboTimeout = setTimeout(() => {
-            gameState.combo = 1;
+        // Сбрасываем таймер комбо
+        if (game.comboTimeout) clearTimeout(game.comboTimeout);
+        game.comboTimeout = setTimeout(() => {
+            game.combo = 1;
             document.getElementById('combo-display').style.opacity = '0';
-            document.getElementById('combo-bar').style.display = 'none';
-        }, gameState.comboTimeoutDuration);
+            document.getElementById('combo-bar').style.width = '0%';
+        }, game.comboTimeoutDuration);
         
-        let damage = gameState.damagePerClick * gameState.combo;
-        let isCritical = false;
+        // Расчет и применение урона
+        const damage = calculateDamageForClick();
+        applyDamage(damage);
         
-        if (Math.random() * 100 < gameState.critChance) {
-            damage *= gameState.critMultiplier;
-            isCritical = true;
-            gameState.stats.critHits++;
-            document.getElementById('click-area').classList.add('critical-hit');
-            setTimeout(() => {
-                document.getElementById('click-area').classList.remove('critical-hit');
-            }, 500);
-        }
-        
-        damage = Math.floor(damage);
-        gameState.balance += damage;
-        gameState.totalDamage += damage;
-        gameState.experience += damage;
-        
+        // Проверка уровня
         checkLevelUp();
+        
+        // Проверка достижений
         checkAchievements();
-        gameState.stats.maxBalance = Math.max(gameState.stats.maxBalance, gameState.balance);
         
         updateUI();
         saveGame();
     }
 
+    // Показать комбо
     function showCombo() {
         const comboDisplay = document.getElementById('combo-display');
-        const comboBar = document.getElementById('combo-bar');
-        
-        comboDisplay.textContent = `x${gameState.combo.toFixed(1)}`;
+        comboDisplay.textContent = `x${game.combo.toFixed(1)}`;
         comboDisplay.style.opacity = '1';
-        comboBar.style.display = 'block';
-        comboBar.style.width = `${(gameState.combo / gameState.maxCombo) * 100}%`;
     }
 
-    function calculateDamage() {
-        gameState.damagePerClick = gameState.baseDamage;
-        gameState.critChance = 0;
-        
-        for (const [id, upgrade] of Object.entries(gameState.upgrades)) {
-            if (upgrade.bought) {
-                if (upgrade.type === 'melee') {
-                    gameState.damagePerClick += upgrade.damage;
-                }
-                if (upgrade.type === 'ranged') {
-                    gameState.damagePerClick += upgrade.damage;
-                    if (upgrade.critChance) gameState.critChance += upgrade.critChance;
-                    if (upgrade.critMultiplier) gameState.critMultiplier = Math.max(gameState.critMultiplier, upgrade.critMultiplier);
-                }
-            }
-        }
-        
-        gameState.damagePerClick = Math.floor(gameState.damagePerClick * gameState.globalMultiplier);
-        
-        gameState.dps = 0;
-        for (const [id, upgrade] of Object.entries(gameState.upgrades)) {
-            if (upgrade.bought && upgrade.type === 'support') {
-                gameState.dps += upgrade.dps;
-            }
-        }
-        gameState.dps = Math.floor(gameState.dps * gameState.globalMultiplier);
-        
-        if (gameState.autoClicker > 0) {
-            gameState.dps += gameState.baseDamage * gameState.autoClicker;
-        }
-    }
-
-    function updateUI() {
-        document.getElementById('balance').textContent = Math.floor(gameState.balance).toLocaleString();
-        document.getElementById('damage-per-click').textContent = Math.floor(gameState.damagePerClick).toLocaleString();
-        document.getElementById('total-damage').textContent = Math.floor(gameState.totalDamage).toLocaleString();
-        document.getElementById('level').textContent = gameState.level;
-        document.getElementById('current-damage').textContent = Math.floor(gameState.experience).toLocaleString();
-        document.getElementById('required-damage').textContent = Math.floor(gameState.requiredExperience).toLocaleString();
-    }
-
+    // Проверка повышения уровня
     function checkLevelUp() {
-        while (gameState.experience >= gameState.requiredExperience) {
-            gameState.experience -= gameState.requiredExperience;
-            gameState.level++;
-            gameState.requiredExperience = calculateRequiredExp(gameState.level);
+        while (game.experience >= game.requiredExperience) {
+            game.experience -= game.requiredExperience;
+            game.level++;
             
+            // Обновляем требуемый опыт
+            game.requiredExperience = getRequiredExperience(game.level);
+            
+            // Применяем множитель цен
+            updatePriceMultipliers();
+            
+            // Проверяем награды за уровень
+            if (game.levelRewards[game.level]) {
+                game.levelRewards[game.level].effect();
+                showNotification(`Уровень ${game.level}! ${game.levelRewards[game.level].description}`);
+            }
+            
+            // Проверяем достижения
             checkAchievements();
         }
     }
 
-    function calculateRequiredExp(lvl) {
-        return 500 + (lvl * 200);
+    // Расчет необходимого опыта для уровня
+    function getRequiredExperience(level) {
+        const requirements = {
+            1: 0,
+            2: 500,
+            3: 1500,
+            4: 3000,
+            5: 5000,
+            6: 8000,
+            7: 12000,
+            8: 18000,
+            9: 25000,
+            10: 35000,
+            11: 50000,
+            12: 75000,
+            13: 100000,
+            14: 150000,
+            15: 200000,
+            16: 300000,
+            17: 450000,
+            18: 600000,
+            19: 800000,
+            20: 1000000,
+            21: 1300000,
+            22: 1700000,
+            23: 2200000,
+            24: 2700000,
+            25: 3500000
+        };
+        return requirements[level] || (requirements[25] * Math.pow(2, level - 25));
     }
 
+    // Обновление множителей цен
+    function updatePriceMultipliers() {
+        let multiplier = 1.2;
+        
+        if (game.level >= 5) multiplier = game.priceMultipliers[5];
+        if (game.level >= 10) multiplier = game.priceMultipliers[10];
+        if (game.level >= 15) multiplier = game.priceMultipliers[15];
+        
+        for (const upgrade of Object.values(game.upgrades)) {
+            if (!upgrade.bought) {
+                upgrade.cost = Math.floor(upgrade.cost * multiplier);
+            }
+        }
+    }
+
+    // Проверка достижений
     function checkAchievements() {
-        for (const [id, achievement] of Object.entries(gameState.achievements)) {
-            if (!achievement.achieved && achievement.condition(gameState.stats)) {
+        for (const [id, achievement] of Object.entries(game.achievements)) {
+            if (!achievement.achieved && achievement.condition()) {
                 achievement.achieved = true;
                 if (achievement.effect) achievement.effect();
                 showNotification(`Достижение: ${achievement.name}! ${achievement.reward}`);
@@ -449,20 +693,55 @@
         }
     }
 
-    function showNotification(message) {
-        if (window.Telegram && window.Telegram.WebApp) {
-            tg.showAlert(message);
-        } else {
-            alert(message);
+    // Расчет урона
+    function calculateDamage() {
+        game.damagePerClick = game.baseDamage;
+        game.critChance = 0;
+        
+        // Применяем улучшения
+        for (const upgrade of Object.values(game.upgrades)) {
+            if (upgrade.bought) {
+                game.damagePerClick += upgrade.damage || 0;
+                game.critChance += upgrade.critChance || 0;
+                if (upgrade.critMultiplier) {
+                    game.critMultiplier = Math.max(game.critMultiplier, upgrade.critMultiplier);
+                }
+            }
+        }
+        
+        // Применяем глобальный множитель
+        game.damagePerClick = Math.floor(game.damagePerClick * game.globalMultiplier);
+        
+        updateUI();
+    }
+
+    // Обновление интерфейса
+    function updateUI() {
+        const elements = {
+            'balance': game.balance,
+            'damage-per-click': game.damagePerClick,
+            'total-damage': game.totalDamage,
+            'level': game.level,
+            'current-damage': game.experience,
+            'required-damage': game.requiredExperience
+        };
+
+        for (const [id, value] of Object.entries(elements)) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = Math.floor(value).toLocaleString();
+            }
         }
     }
 
+    // DPS система
     function startDPS() {
         setInterval(() => {
-            if (gameState.dps > 0) {
-                gameState.balance += gameState.dps;
-                gameState.totalDamage += gameState.dps;
-                gameState.experience += gameState.dps;
+            if (game.dps > 0) {
+                const damage = Math.floor(game.dps * game.globalMultiplier);
+                game.balance += damage;
+                game.totalDamage += damage;
+                game.experience += damage;
                 checkLevelUp();
                 updateUI();
                 saveGame();
@@ -470,231 +749,272 @@
         }, 1000);
     }
 
+    // Автокликер
     function startAutoClicker() {
+        if (game.autoClickerInterval) {
+            clearInterval(game.autoClickerInterval);
+        }
+        if (game.autoClicker > 0) {
+            game.autoClickerInterval = setInterval(() => {
+                handleClick();
+            }, 1000 / game.autoClicker);
+        }
+    }
+
+    // Отсчет времени игры
+    function startPlayTimeCounter() {
         setInterval(() => {
-            if (gameState.autoClicker > 0) {
-                clickDamage();
+            game.playTime += 1000;
+            game.stats.playTime = game.playTime;
+            
+            // Проверка достижения "Бессмертный" (24h игры)
+            if (game.playTime >= 86400000 && !game.achievements.immortal.achieved) {
+                game.achievements.immortal.achieved = true;
+                game.autoClicker += 1;
+                startAutoClicker();
+                showNotification("Достижение 'Бессмертный' получено! +1 авто-клик/сек");
             }
         }, 1000);
     }
 
-    function buyUpgrade(id) {
-        const upgrade = gameState.upgrades[id];
-        if (!upgrade.bought && gameState.balance >= upgrade.cost) {
-            if (upgrade.requires && !gameState.upgrades[upgrade.requires].bought) {
-                showNotification(`Сначала купите ${getUpgradeName(upgrade.requires)}!`);
-                return;
+    // Показать уведомление
+    function showNotification(message) {
+        alert(message);
+    }
+
+    // Магазин
+    function renderShop() {
+        const container = document.getElementById('upgrades-container');
+        container.innerHTML = '';
+        
+        // Ближний бой
+        let meleeSection = document.createElement('div');
+        meleeSection.className = 'menu-section';
+        meleeSection.innerHTML = '<h3>Ближний бой</h3>';
+        container.appendChild(meleeSection);
+        
+        let meleeUpgrades = Object.values(game.upgrades).filter(u => u.type === 'melee');
+        let nextMelee = meleeUpgrades.find(u => !u.bought && (!u.next || game.upgrades[u.next]?.bought === false));
+        
+        if (nextMelee) {
+            const canBuy = game.balance >= nextMelee.cost;
+            const div = document.createElement('div');
+            div.className = `upgrade ${canBuy ? '' : 'unavailable'}`;
+            div.innerHTML = `
+                <strong>${nextMelee.name}</strong><br>
+                +${nextMelee.damage} урон<br>
+                Цена: ${nextMelee.cost}
+            `;
+            
+            if (canBuy) {
+                div.addEventListener('click', () => buyUpgrade(nextMelee.id));
             }
             
-            gameState.balance -= upgrade.cost;
+            meleeSection.appendChild(div);
+        } else {
+            meleeSection.innerHTML += '<p>Все улучшения куплены!</p>';
+        }
+        
+        // Дальний бой
+        let rangedSection = document.createElement('div');
+        rangedSection.className = 'menu-section';
+        rangedSection.innerHTML = '<h3>Дальний бой</h3>';
+        container.appendChild(rangedSection);
+        
+        let rangedUpgrades = Object.values(game.upgrades).filter(u => u.type === 'ranged');
+        let nextRanged = rangedUpgrades.find(u => !u.bought && (!u.next || game.upgrades[u.next]?.bought === false));
+        
+        if (nextRanged) {
+            const canBuy = game.balance >= nextRanged.cost;
+            const div = document.createElement('div');
+            div.className = `upgrade ${canBuy ? '' : 'unavailable'}`;
+            
+            let special = '';
+            if (nextRanged.critChance) special = `<br>+${nextRanged.critChance}% шанс крита (x${nextRanged.critMultiplier})`;
+            
+            div.innerHTML = `
+                <strong>${nextRanged.name}</strong><br>
+                +${nextRanged.damage} урон${special}<br>
+                Цена: ${nextRanged.cost}
+            `;
+            
+            if (canBuy) {
+                div.addEventListener('click', () => buyUpgrade(nextRanged.id));
+            }
+            
+            rangedSection.appendChild(div);
+        } else {
+            rangedSection.innerHTML += '<p>Все улучшения куплены!</p>';
+        }
+    }
+
+    // Покупка улучшения
+    function buyUpgrade(id) {
+        const upgrade = game.upgrades[id];
+        if (!upgrade.bought && game.balance >= upgrade.cost) {
+            game.balance -= upgrade.cost;
             upgrade.bought = true;
-            gameState.stats.upgradesBought++;
+            game.stats.upgradesBought++;
             
             calculateDamage();
             checkAchievements();
-            updateUI();
             renderShop();
+            updateUI();
             saveGame();
         }
     }
 
-    function getUpgradeName(id) {
-        const names = {
-            knife: "Нож",
-            axe: "Топор",
-            sword: "Меч",
-            chainsaw: "Бензопила",
-            lightsaber: "Лазерный меч",
-            pistol: "Пистолет",
-            rifle: "Винтовка",
-            sniper: "Снайперка",
-            grenadeLauncher: "Гранатомёт",
-            plasmaGun: "Плазменная пушка",
-            infantry: "Поддержка пехоты",
-            artillery: "Поддержка артиллерии"
-        };
-        return names[id] || id;
+    // Усиления
+    function renderBoosts() {
+        const container = document.getElementById('boosts-container');
+        container.innerHTML = '';
+        
+        for (const boost of Object.values(game.boosts)) {
+            const now = Date.now();
+            const remainingCooldown = Math.max(0, (boost.lastUsed + boost.cooldown) - now);
+            const isActive = game.activeBoosts.some(b => b.id === boost.id && b.endTime > now);
+            const canActivate = !isActive && remainingCooldown <= 0 && 
+                              game.activeBoosts.length < game.maxActiveBoosts;
+            
+            const div = document.createElement('div');
+            div.className = `upgrade ${canActivate ? '' : 'unavailable'}`;
+            div.style.opacity = canActivate ? '1' : '0.7';
+            
+            let statusText;
+            if (isActive) {
+                statusText = 'АКТИВНО';
+            } else if (remainingCooldown > 0) {
+                const minutes = Math.ceil(remainingCooldown / 60000);
+                statusText = `Доступно через: ${minutes} мин`;
+            } else {
+                statusText = 'Готово';
+            }
+            
+            div.innerHTML = `
+                <strong>${boost.name}</strong><br>
+                ${boost.description}<br>
+                ${statusText}
+            `;
+            
+            if (canActivate) {
+                div.addEventListener('click', () => activateBoost(boost.id));
+            }
+            
+            container.appendChild(div);
+        }
     }
 
+    // Активация усиления
     function activateBoost(id) {
-        const boost = gameState.boosts[id];
+        const boost = game.boosts[id];
         const now = Date.now();
-        
-        if (now - boost.lastUsed < boost.cooldown) {
-            const remaining = Math.ceil((boost.cooldown - (now - boost.lastUsed)) / (60 * 1000));
-            showNotification(`Усиление доступно через ${remaining} минут`);
-            return;
-        }
-        
-        if (gameState.activeBoosts.length >= gameState.maxActiveBoosts) {
-            showNotification(`Можно активировать только ${gameState.maxActiveBoosts} усиления одновременно`);
-            return;
-        }
         
         boost.lastUsed = now;
         boost.effect();
         
         if (id === 'reconnaissance') {
-            gameState.boosts.reconnaissance.clicksLeft = 20;
-            const originalOnClick = gameState.boosts.reconnaissance.onClick;
-            gameState.boosts.reconnaissance.onClick = (damage) => {
-                gameState.boosts.reconnaissance.clicksLeft--;
-                if (gameState.boosts.reconnaissance.clicksLeft <= 0) {
-                    boost.revert();
-                    gameState.activeBoosts = gameState.activeBoosts.filter(b => b.id !== id);
-                    gameState.boosts.reconnaissance.onClick = originalOnClick;
+            let clicks = 0;
+            const originalClick = handleClick;
+            handleClick = function() {
+                clicks++;
+                if (clicks >= 20) {
+                                        boost.revert();
+                    handleClick = originalClick;
                 }
-                return damage;
+                return originalClick.apply(this, arguments);
             };
         }
         
-        const endTime = now + (boost.duration || 0);
-        gameState.activeBoosts.push({ id, endTime });
+        game.activeBoosts.push({
+            id: boost.id,
+            endTime: now + boost.duration
+        });
         
-        if (boost.duration) {
-            setTimeout(() => {
-                boost.revert();
-                gameState.activeBoosts = gameState.activeBoosts.filter(b => b.id !== id);
-                renderBoosts();
-                saveGame();
-            }, boost.duration);
-        }
+        setTimeout(() => {
+            boost.revert();
+            game.activeBoosts = game.activeBoosts.filter(b => b.id !== boost.id);
+            renderBoosts();
+            saveGame();
+        }, boost.duration);
         
-        showNotification(`Активировано: ${boost.name}`);
         renderBoosts();
         saveGame();
     }
 
-    function renderShop() {
-        const container = document.getElementById('upgrades-container');
-        container.innerHTML = '';
-        
-        container.innerHTML += '<h3>Ближний бой</h3>';
-        for (const [id, upgrade] of Object.entries(gameState.upgrades)) {
-            if (upgrade.type === 'melee') {
-                const canBuy = !upgrade.bought && gameState.balance >= upgrade.cost && 
-                              (!upgrade.requires || gameState.upgrades[upgrade.requires].bought);
-                container.innerHTML += `
-                    <div class="upgrade ${canBuy ? '' : 'unavailable'}" onclick="buyUpgrade('${id}')">
-                        <strong>${getUpgradeName(id)}</strong><br>
-                        +${upgrade.damage} урон за клик<br>
-                        Цена: ${upgrade.cost}
-                        ${upgrade.requires && !gameState.upgrades[upgrade.requires].bought ? `<br><small>Требуется: ${getUpgradeName(upgrade.requires)}</small>` : ''}
-                    </div>
-                `;
-            }
-        }
-        
-        container.innerHTML += '<h3>Дальний бой</h3>';
-        for (const [id, upgrade] of Object.entries(gameState.upgrades)) {
-            if (upgrade.type === 'ranged') {
-                const canBuy = !upgrade.bought && gameState.balance >= upgrade.cost && 
-                              (!upgrade.requires || gameState.upgrades[upgrade.requires].bought);
-                let special = '';
-                if (id === 'sniper') special = `<br>+${upgrade.critChance}% шанс крита (x${upgrade.critMultiplier})`;
-                if (id === 'grenadeLauncher') special = '<br>Урон по площади';
-                
-                container.innerHTML += `
-                    <div class="upgrade ${canBuy ? '' : 'unavailable'}" onclick="buyUpgrade('${id}')">
-                        <strong>${getUpgradeName(id)}</strong><br>
-                        +${upgrade.damage} урон за клик${special}<br>
-                        Цена: ${upgrade.cost}
-                        ${upgrade.requires && !gameState.upgrades[upgrade.requires].bought ? `<br><small>Требуется: ${getUpgradeName(upgrade.requires)}</small>` : ''}
-                    </div>
-                `;
-            }
-        }
-        
-        container.innerHTML += '<h3>Поддержка</h3>';
-        for (const [id, upgrade] of Object.entries(gameState.upgrades)) {
-            if (upgrade.type === 'support') {
-                const canBuy = !upgrade.bought && gameState.balance >= upgrade.cost && 
-                              (!upgrade.requires || gameState.upgrades[upgrade.requires].bought);
-                container.innerHTML += `
-                    <div class="upgrade ${canBuy ? '' : 'unavailable'}" onclick="buyUpgrade('${id}')">
-                        <strong>${getUpgradeName(id)}</strong><br>
-                        +${upgrade                         dps} урона в секунду<br>
-                        Цена: ${upgrade.cost}
-                        ${upgrade.requires && !gameState.upgrades[upgrade.requires].bought ? `<br><small>Требуется: ${getUpgradeName(upgrade.requires)}</small>` : ''}
-                    </div>
-                `;
-            }
-        }
-    }
-
-    function renderBoosts() {
-        const container = document.getElementById('boosts-container');
-        container.innerHTML = '';
-        
-        for (const [id, boost] of Object.entries(gameState.boosts)) {
-            const now = Date.now();
-            const remainingCooldown = Math.max(0, boost.cooldown - (now - boost.lastUsed));
-            const hours = Math.floor(remainingCooldown / (60 * 60 * 1000));
-            const minutes = Math.floor((remainingCooldown % (60 * 60 * 1000)) / (60 * 1000));
-            
-            const isActive = gameState.activeBoosts.some(b => b.id === id);
-            const canActivate = remainingCooldown <= 0 && !isActive && gameState.activeBoosts.length < gameState.maxActiveBoosts;
-            
-            container.innerHTML += `
-                <div class="upgrade ${canActivate ? '' : 'unavailable'}" 
-                     onclick="${canActivate ? `activateBoost('${id}')` : ''}"
-                     style="${!canActivate ? 'opacity: 0.7;' : ''}">
-                    <strong>${boost.name}</strong><br>
-                    ${boost.description}<br>
-                    ${isActive ? 'АКТИВНО' : 
-                      remainingCooldown > 0 ? `Доступно через: ${hours}ч ${minutes}м` : 'Готово к использованию'}
-                </div>
-            `;
-        }
-    }
-
+    // Достижения
     function renderAchievements() {
         const container = document.getElementById('achievements-container');
         container.innerHTML = '';
         
-        for (const [id, achievement] of Object.entries(gameState.achievements)) {
-            container.innerHTML += `
-                <div class="upgrade" style="${achievement.achieved ? 'border: 2px solid gold;' : 'opacity: 0.7;'}">
-                    <strong>${achievement.name}</strong><br>
-                    ${achievement.description}<br>
-                    ${achievement.achieved ? 
-                      `<span style="color: green;">Получено: ${achievement.reward}</span>` : 
-                      '<span style="color: red;">Не получено</span>'}
-                </div>
+        for (const achievement of Object.values(game.achievements)) {
+            const div = document.createElement('div');
+            div.className = 'upgrade';
+            div.style.border = achievement.achieved ? '2px solid gold' : '1px solid #444';
+            div.style.opacity = achievement.achieved ? '1' : '0.7';
+            
+            let status = achievement.achieved ? 
+                `<span style="color: green;">Получено: ${achievement.reward}</span>` : 
+                '<span style="color: red;">Не получено</span>';
+            
+            div.innerHTML = `
+                <strong>${achievement.name}</strong><br>
+                ${achievement.description}<br>
+                ${status}
             `;
+            
+            container.appendChild(div);
         }
     }
 
-    function openMenu(menuId) {
-        document.getElementById(menuId).style.display = 'block';
-        if (menuId === 'shop-menu') renderShop();
-        if (menuId === 'boost-menu') renderBoosts();
-        if (menuId === 'achievements-menu') renderAchievements();
+    // Меню
+    function openMenu(type) {
+        document.getElementById(`${type}-menu`).style.display = 'block';
     }
 
-    function closeMenu(menuId) {
-        document.getElementById(menuId).style.display = 'none';
+    function closeMenu(type) {
+        document.getElementById(`${type}-menu`).style.display = 'none';
     }
 
+    // Сохранение игры
     function saveGame() {
-        localStorage.setItem('warClickerData', JSON.stringify(gameState));
-        if (window.Telegram && window.Telegram.WebApp) {
-            tg.sendData(JSON.stringify(gameState));
-        }
+        localStorage.setItem('warClickerSave', JSON.stringify({
+            balance: game.balance,
+            totalDamage: game.totalDamage,
+            baseDamage: game.baseDamage,
+            level: game.level,
+            experience: game.experience,
+            requiredExperience: game.requiredExperience,
+            combo: game.combo,
+            critChance: game.critChance,
+            critMultiplier: game.critMultiplier,
+            autoClicker: game.autoClicker,
+            globalMultiplier: game.globalMultiplier,
+            stats: game.stats,
+            upgrades: game.upgrades,
+            activeBoosts: game.activeBoosts,
+            boosts: {
+                emperor: { lastUsed: game.boosts.emperor.lastUsed },
+                mobilization: { lastUsed: game.boosts.mobilization.lastUsed },
+                reconnaissance: { lastUsed: game.boosts.reconnaissance.lastUsed }
+            },
+            achievements: game.achievements,
+            playTime: game.playTime
+        }));
     }
-
-    function loadGame() {
-        const savedData = localStorage.getItem('warClickerData');
-        if (savedData) {
-            const data = JSON.parse(savedData);
-            Object.assign(gameState, data);
-            calculateDamage();
-        }
-    }
-
-    // Автосохранение каждые 30 секунд
-    setInterval(saveGame, 30000);
 
     // Инициализация игры при загрузке страницы
-    document.addEventListener('DOMContentLoaded', initGame);
+    window.addEventListener('load', function() {
+        // Инициализируем обработчики
+        setupEventListeners();
+        
+        // Загружаем сохранение
+        loadGame();
+        
+        // Запускаем игровые процессы
+        startDPS();
+        startAutoClicker();
+        startPlayTimeCounter();
+    });
 </script>
+</body>
+</html>

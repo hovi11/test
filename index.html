@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tea Clicker</title>
+    <title>tea Clicker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Стили остаются без изменений */
         :root {
             --bg-color: #ffffff;
             --text-color: #000000;
@@ -144,18 +145,17 @@
         let totalDamage = 0;
         let damagePerClick = 1;
         let upgrades = {
-            damage1: { bought: false, cost: 50, damage: 1 },
-            damage2: { bought: false, cost: 150, damage: 3 },
-            damage3: { bought: false, cost: 500, damage: 10 },
-            infantry: { bought: false, cost: 1000, dps: 10 },
-            artillery: { bought: false, cost: 5000, dps: 50 },
-            tanks: { bought: false, cost: 20000, dps: 200 }
+            damage1: { bought: false, cost: 25, damage: 1 },
+            damage2: { bought: false, cost: 50, damage: 2 },
+            infantry: { bought: false, cost: 400, dps: 5 },
+            artillery: { bought: false, cost: 1000, dps: 10 }
         };
         let boosts = {
             emperor: { lastUsed: 0, active: false, duration: 60000 }
         };
         let dps = 0;
         let boostTimeout = null;
+        let dpsInterval = null;
 
         function loadGame() {
             const savedData = localStorage.getItem('warClickerData');
@@ -200,8 +200,9 @@
         }
 
         function startDPS() {
+            if (dpsInterval) clearInterval(dpsInterval);
             calculateDPS();
-            setInterval(() => {
+            dpsInterval = setInterval(() => {
                 if (dps > 0) {
                     balance += dps;
                     totalDamage += dps;
@@ -215,7 +216,6 @@
             dps = 0;
             if (upgrades.infantry.bought) dps += upgrades.infantry.dps;
             if (upgrades.artillery.bought) dps += upgrades.artillery.dps;
-            if (upgrades.tanks.bought) dps += upgrades.tanks.dps;
         }
 
         function buyUpgrade(id) {
@@ -226,9 +226,11 @@
                 
                 if (id.startsWith('damage')) {
                     damagePerClick += upgrade.damage;
+                } else {
+                    calculateDPS();
+                    startDPS(); // Перезапускаем DPS при покупке улучшения
                 }
                 
-                calculateDPS();
                 updateUI();
                 renderShop();
                 saveGame();
@@ -284,16 +286,40 @@
             const container = document.getElementById('upgrades-container');
             container.innerHTML = '';
             
-            for (const [id, upgrade] of Object.entries(upgrades)) {
-                if (!upgrade.bought) {
-                    container.innerHTML += `
-                        <div class="upgrade" onclick="buyUpgrade('${id}')">
-                            <strong>${id.startsWith('damage') ? 'Улучшение урона' : 'Поддержка'} ${id.replace(/\D/g,'') || id}</strong><br>
-                            ${id.startsWith('damage') ? `+${upgrade.damage} урона за клик` : `+${upgrade.dps} урона в секунду`}<br>
-                            Цена: ${upgrade.cost}
-                        </div>
-                    `;
-                }
+            if (!upgrades.damage1.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('damage1')">
+                        <strong>Улучшение урона lvl 1</strong><br>
+                        +1 урон за клик<br>
+                        Цена: 25
+                    </div>
+                `;
+            } else if (!upgrades.damage2.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('damage2')">
+                        <strong>Улучшение урона lvl 2</strong><br>
+                        +2 урона за клик<br>
+                        Цена: 50
+                    </div>
+                `;
+            }
+            
+            if (!upgrades.infantry.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('infantry')">
+                        <strong>Поддержка пехоты</strong><br>
+                        +5 урона в секунду<br>
+                        Цена: 400
+                    </div>
+                `;
+            } else if (!upgrades.artillery.bought) {
+                container.innerHTML += `
+                    <div class="upgrade" onclick="buyUpgrade('artillery')">
+                        <strong>Поддержка артиллерии</strong><br>
+                        +10 урона в секунду<br>
+                        Цена: 1000
+                    </div>
+                `;
             }
         }
 
